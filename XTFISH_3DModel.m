@@ -115,9 +115,6 @@ extendMinZ = vDataSet.GetExtendMinZ;
 extendMaxZ = vDataSet.GetExtendMaxZ;
 spacingZ = (extendMaxZ - extendMinZ) / sizeZ;
 
-extendMin = [extendMinX extendMinY extendMinZ];
-spacing = [spacingX spacingY spacingZ];
-
 %% Nucleus detection
 % Compute Imaris Surfaces
 
@@ -139,7 +136,7 @@ aSurpassScene.AddChild(aNucleus,-1);
 %% Nuclei mask (& prepare distance map)
 aType=Imaris.tType.eTypeUInt16;
 vDataSet.SetType(aType);
-vDataSet.SetSizeC(sizeC+2);
+vDataSet.SetSizeC(sizeC+1);
 
 n = aNucleus.GetNumberOfSurfaces;
 tracks = aNucleus.GetTrackIds;
@@ -168,7 +165,6 @@ if sizeX * sizeY * sizeZ < 419430400
         vNewChannel = vNewChannel + vMask;
     end
     vDataSet.SetDataVolumeAs1DArrayShorts(vNewChannel,sizeC,time);
-    vDataSet.SetDataVolumeAs1DArrayShorts(vNewChannel,sizeC+1,time);
 else
     for z=0:sizeZ-1
         vNewSlice = int16(zeros(sizeX,sizeY));
@@ -183,23 +179,14 @@ else
             vNewSlice = vNewSlice + vMaskSlice;
         end
         vDataSet.SetDataSliceShorts(vNewSlice,z,sizeC,time);
-        vDataSet.SetDataSliceShorts(vNewSlice,z,sizeC+1,time);
     end
 end
 
 % end
-    
-%% Distance map
-aType=Imaris.tType.eTypeFloat;
-vDataSet.SetType(aType);
-vImarisApplication.GetImageProcessing.DistanceTransformChannel(vDataSet,sizeC+1,1,true);
 
-%aColorRGB=(0:256:65280)';
-%aColorRGB=[0:197379:16777215,16580607:-196608:65535,65280:-766:255]';
-%aA = 0;
-%vDataSet.SetChannelColorTable(sizeC+1, aColorRGB, aA);
+aType=Imaris.tType.eTypeUInt16;
+vDataSet.SetType(aType);
 vDataSet.SetChannelName(sizeC,'Nuclei');
-vDataSet.SetChannelName(sizeC+1,'Distance map');
 vImarisApplication.SetDataSet(vDataSet);
 
 
@@ -223,69 +210,70 @@ for i=1:sizeC-1
 end
 
 %% Distance from nucleus centroid to sphere centroid to boundary
-
-for i=1:n
-    CMN = aNucleus.GetCenterOfMass(i-1);
-    vertices = aNucleus.GetVertices(i-1);
-    triangles = aNucleus.GetTriangles(i-1);
-    faces = triangles + 1; % Index correction for Matlab
-    
-    for j=1:sizeC-1
-        positions = aSpots(j).GetPositionsXYZ;
-        stats = aSpots(j).GetStatistics;
-        aNames = cell(stats.mNames);
-        aUnits = cell(stats.mUnits);
-        aUnit = char(aUnits(find(ismember(aNames, 'Position X')==1, 1)));
-        aFactornames = cell(stats.mFactorNames);
-        aFactors = transpose(cell(stats.mFactors));
-        values = stats.mValues;
-        ids = stats.mIds;
-        ch = strcmp(aFactornames,'Channel');
-        I = strcmp(aNames,'Intensity Center') & strcmp(aFactors(:,ch),num2str(sizeC+1));
-        intensities = values(I);
-        corrids = ids(I);
-        spotcenters = positions(corrids(intensities == i)+1,:);
-        
-        % Compute border distance from nucleus center (in spot direction)
-        ns = size(spotcenters,1);
-        if ns > 0
-            ids = corrids(intensities == i);
-            dn = zeros(ns,1);
-            ds = zeros(ns,1);
-            names_dn = cell(1,ns);
-            names_ds = cell(1,ns);
-            units = cell(1,ns);
-            factors = cell(4,ns);
-            [names_dn{1:ns}] = deal('Distance from nucleus centroid to border');
-            [names_ds{1:ns}] = deal('Distance from spot to nucleus centroid');
-            [units{1:ns}] = deal(aUnit);
-            [factors{1,1:ns}] = deal('Spot');
-            [factors{2,1:ns}] = deal('');
-            [factors{3,1:ns}] = deal('');
-            [factors{4,1:ns}] = deal('');
-
-            % For each spot in the selected nucleus
-            for k=1:ns;
-                % Intersections computation
-                CMS = spotcenters(k,:);
-                l = [CMS CMN-CMS];
-                [inters pos] = intersectLineMesh3d(l, vertices, faces);
-
-                % Closest intersection on the outer layer of the nucleus
-                [~, idx] = min(abs(pos(pos<0)));
-                points = inters(pos<0,:);
-                point = points(idx,:);
-
-                % Distances computation
-                dn(k) = norm(point - CMN);
-                ds(k) = norm(CMS - CMN);
-            end
-        
-            % Save statistics
-            aSpots(j).AddStatistics(names_dn,dn,units,factors,aFactornames,ids);
-            aSpots(j).AddStatistics(names_ds,ds,units,factors,aFactornames,ids);
-        end
-    end
-end
+XTFISH_Regenerate_Stats(aImarisApplicationID);
+% 
+% for i=1:n
+%     CMN = aNucleus.GetCenterOfMass(i-1);
+%     vertices = aNucleus.GetVertices(i-1);
+%     triangles = aNucleus.GetTriangles(i-1);
+%     faces = triangles + 1; % Index correction for Matlab
+%     
+%     for j=1:sizeC-1
+%         positions = aSpots(j).GetPositionsXYZ;
+%         stats = aSpots(j).GetStatistics;
+%         aNames = cell(stats.mNames);
+%         aUnits = cell(stats.mUnits);
+%         aUnit = char(aUnits(find(ismember(aNames, 'Position X')==1, 1)));
+%         aFactornames = cell(stats.mFactorNames);
+%         aFactors = transpose(cell(stats.mFactors));
+%         values = stats.mValues;
+%         ids = stats.mIds;
+%         ch = strcmp(aFactornames,'Channel');
+%         I = strcmp(aNames,'Intensity Center') & strcmp(aFactors(:,ch),num2str(sizeC+1));
+%         intensities = values(I);
+%         corrids = ids(I);
+%         spotcenters = positions(corrids(intensities == i)+1,:);
+%         
+%         % Compute border distance from nucleus center (in spot direction)
+%         ns = size(spotcenters,1);
+%         if ns > 0
+%             ids = corrids(intensities == i);
+%             dn = zeros(ns,1);
+%             ds = zeros(ns,1);
+%             names_dn = cell(1,ns);
+%             names_ds = cell(1,ns);
+%             units = cell(1,ns);
+%             factors = cell(4,ns);
+%             [names_dn{1:ns}] = deal('Distance from nucleus centroid to border');
+%             [names_ds{1:ns}] = deal('Distance from spot to nucleus centroid');
+%             [units{1:ns}] = deal(aUnit);
+%             [factors{1,1:ns}] = deal('Spot');
+%             [factors{2,1:ns}] = deal('');
+%             [factors{3,1:ns}] = deal('');
+%             [factors{4,1:ns}] = deal('');
+% 
+%             % For each spot in the selected nucleus
+%             for k=1:ns;
+%                 % Intersections computation
+%                 CMS = spotcenters(k,:);
+%                 l = [CMS CMN-CMS];
+%                 [inters pos] = intersectLineMesh3d(l, vertices, faces);
+% 
+%                 % Closest intersection on the outer layer of the nucleus
+%                 [~, idx] = min(abs(pos(pos<0)));
+%                 points = inters(pos<0,:);
+%                 point = points(idx,:);
+% 
+%                 % Distances computation
+%                 dn(k) = norm(point - CMN);
+%                 ds(k) = norm(CMS - CMN);
+%             end
+%         
+%             % Save statistics
+%             aSpots(j).AddStatistics(names_dn,dn,units,factors,aFactornames,ids);
+%             aSpots(j).AddStatistics(names_ds,ds,units,factors,aFactornames,ids);
+%         end
+%     end
+% end
 
 end

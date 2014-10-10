@@ -21,7 +21,8 @@
 %  Description:
 %
 %   This XTension regenerates the area of 2D ovary cells.
-%
+%   It requires intersect_line.m and normals.m from FieldTrip project
+%   https://code.google.com/p/fieldtrip/
 %
 function XTFISH_Regenerate_Stats(aImarisApplicationID) % ID corresponds to Imaris instance
 
@@ -100,7 +101,7 @@ if nucleus >= 0
                 values = stats.mValues;
                 ids = stats.mIds;
                 ch = strcmp(aFactornames,'Channel');
-                I = strcmp(aNames,'Intensity Center') & strcmp(aFactors(:,ch),num2str(sizeC-1));
+                I = strcmp(aNames,'Intensity Center') & strcmp(aFactors(:,ch),num2str(sizeC));
                 intensities = values(I);
                 corrids = ids(I);
                 spotcenters = positions(corrids(intensities == i)+1,:);
@@ -128,8 +129,7 @@ if nucleus >= 0
                     for k=1:ns;
                         % Intersections computation
                         CMS = spotcenters(k,:);
-                        l = [CMS CMN-CMS];
-                        [inters pos] = intersectLineMesh3d(l, vertices, faces);
+                        [inters pos] = intersect_line(vertices, faces, CMS, CMN);
 
                         % Closest intersection on the outer layer of the nucleus
                         [~, idx] = min(abs(pos(pos<0)));

@@ -116,7 +116,7 @@ if nucleus >= 0
             values = stats.mValues;
             ids = stats.mIds;
             ch = strcmp(aFactornames,'Channel');
-            I = strcmp(aNames,'Intensity Center') & strcmp(aFactors(:,ch),num2str(sizeC-1));
+            I = strcmp(aNames,'Intensity Center') & strcmp(aFactors(:,ch),num2str(sizeC));
             intensities = values(I);
             corrids = ids(I);
             

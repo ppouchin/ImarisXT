@@ -94,7 +94,7 @@ defaultanswer{2}=num2str(rgbm(2));
 defaultanswer{3}=num2str(rgbm(3));
 defaultanswer{4}=num2str(rgbm(4));
 defaultanswer{5}='1';
-defaultanswer{6}='3';
+defaultanswer{6}=num2str(sizeZ);
 defaultanswer{7}='3';
 defaultanswer{8}='3';
 
@@ -404,6 +404,14 @@ end
 
 %% Add statistics (2D Area)
 XT2DArea_regenerate(aImarisApplicationID);
+
+%% Save modifications (*.ims files only)
+%filename = vImarisApplication.GetCurrentFileName;
+%[~, ~, extension] = fileparts(filename);
+%if strcmpi(extension,'ims')
+%    vImarisApplication.Save(filename, '');
+%end
+
 % precision = 10e3;
 % for i=1:nb_surfaces
 %     % Get stats

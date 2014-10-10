@@ -72,16 +72,21 @@ for i=0:nb_surfaces-1
         aUnit = char(aUnits(find(ismember(aNames, 'Area')==1, 1)));
         aName = '2D Area';
         adName = '2D Growth';
+        ad2Name = '2D Growth Speed';
 
         % Compute 2D area
         n = aSurface.GetNumberOfSurfaces;
         areas = zeros(n,1);
         dareas = zeros(n,1);
+        d2areas = zeros(n,1);
         ids = zeros(n,1);
         names = cell(n,1);
         dnames = cell(n,1);
+        d2names = cell(n,1);
         units = cell(n,1);
         factors = cell(4,n);
+        
+        % For each object
         for j=0:n-1
             % Find vertices in Z=0 plane (or close enough)
             vertices = aSurface.GetVertices(j);
@@ -99,6 +104,7 @@ for i=0:nb_surfaces-1
             row = 1;
             count = 1;
             elt = 1;
+            
             while count <= size(V,1)
                 V(count) = elt;
                 [rows, cols] = find(edges == elt);
@@ -127,19 +133,57 @@ for i=0:nb_surfaces-1
 
             % Compute 2D area
             areas(j+1) = polyarea(x,y);
-            if j>0 
-                dareas(j+1) = areas(j+1) - areas(j);
-            end
             ids(j+1) = j;
             names(j+1) = {aName};
             dnames(j+1) = {adName};
+            d2names(j+1) = {ad2Name};
             units(j+1) = {aUnit};
             factors(:,j+1) = {'Surface';'';'';num2str(aSurface.GetTimeIndex(j)+1)};
         end
+        
+        trackids = int32(aSurface.GetTrackIds);
+        trackedges = aSurface.GetTrackEdges;
+        tracks = [trackids trackedges+1];
+        tids = unique(tracks(:,1));
+        ntracks = size(tids,1);
+        
+        for t=1:ntracks
+            tid = tids(t,1);
+            track = tracks(tracks(:,1) == tid,:);
+            nt = size(track,1);
+            
+            dareas(track(1,2)) = areas(track(1,3)) - areas(track(1,2));
+            for tp=1:nt-1
+                %if(track(tp,3) == track(tp+1,2))
+                    dareas(track(tp,3)) = (areas(track(tp,3)) - areas(track(tp,2)));% / 2;
+                %else
+                %    dareas(track(tp,3)) = NaN;
+                %end
+            end
+            dareas(track(nt,3)) = areas(track(nt,3)) - areas(track(nt,2));
+        end
+        
+        for t=1:ntracks
+            tid = tids(t,1);
+            track = tracks(tracks(:,1) == tid,:);
+            nt = size(track,1);
+            
+            d2areas(track(1,2)) = dareas(track(1,3)) - dareas(track(1,2));
+            for tp=1:nt-1
+                if(track(tp,3) == track(tp+1,2))
+                    d2areas(track(tp,3)) = (dareas(track(tp+1,3)) - dareas(track(tp,2))) / 2;
+                else
+                    d2areas(track(tp,3)) = NaN;
+                end
+            end
+            d2areas(track(nt,3)) = dareas(track(nt,3)) - dareas(track(nt,2));
+        end
+        
 
         % Add statistics
         aSurface.AddStatistics(names,areas,units,factors,aFactornames,ids);
         aSurface.AddStatistics(dnames,dareas,units,factors,aFactornames,ids);
+        aSurface.AddStatistics(d2names,d2areas,units,factors,aFactornames,ids);
     end
 end
 

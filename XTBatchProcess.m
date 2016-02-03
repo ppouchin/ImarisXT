@@ -85,12 +85,9 @@ if(ok == 1)
 
         %Process one image
         try
-%             fun(aImarisApplicationID);
             fun(vImarisApplication);
         catch err
-            fprintf('Function: %s\n', err.name);
-            fprintf('Line: %s\n', err.line);
-            fprintf('Message: %s\n', err.message);
+            disp(getReport(err,'extended'));
         end
     end
 end

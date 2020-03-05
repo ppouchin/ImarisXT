@@ -228,7 +228,7 @@ if nobj > 0
                     results{i+1,3} = sorted_parents;
                 end
                 
-                if ids(I) ~= results{i+1,2}
+                if ~isequal(ids(I), results{i+1,2})
                     A = results{i+1,2};
                     B = ids(I);
                     val = values(I);
